@@ -1,43 +1,15 @@
 // Get all open jobs for certain user id ( send empty paeameter for manager)
-import mysql from 'mysql';
-import dotenv from 'dotenv';
-import { del } from 'jase';
-dotenv.config();
+import { executeQuery, closePool } from 'db_config.js';
+
 
 const {
   randomBytes,
 } = await import('node:crypto');
 
-
-const db = mysql.createConnection({
-  host: process.env.DB_HOST,
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  database: process.env.DB_DATABASE,
-});
-
-db.connect((err) => {
-    if (err) {
-      console.error('Error connecting to the database:', err.message);
-    } else {
-      console.log('Connected to the MySQL database.');
-    }
-  });
-
-const execute = (sql, params = []) =>
-    new Promise((resolve, reject) => {
-      db.query(sql, params, (err, results) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve(JSON.stringify(results)); // might return a json object
-        }
-      });
-    });
     
 const addNotification = async (userId, jobId, notificationContent) => {
     let sql = `INSERT INTO NOTIFICATIONS (User_ID, Job_ID, Notification_Content) VALUES (?, ?, ?);`;
-    return execute(sql, [userId, jobId, notificationContent]);
+    return executeQuery(sql, [userId, jobId, notificationContent]);
     };
   
 // jobs per user or all jobs if no user ID 
@@ -55,7 +27,7 @@ const getOpenJobs = async (businessId, userId = null) => {
     params.push(userId);
   }
   console.log(`SQL: ${sql} with params, ${params}`)
-  return execute(sql, params);
+  return executeQuery(sql, params);
 };
 
 // job history
@@ -77,7 +49,7 @@ const getJobHistory = async (businessId, userId = null) => {
     params.push(userId);
   }
 
-  return execute(sql, params);
+  return executeQuery(sql, params);
 };
 
 // Function to create a new job
@@ -99,10 +71,10 @@ const generateUniqueJobId = async () => {
       WHERE Job_ID = ?;
     `;
 
-    const jobTableResult = await execute(checkJobTableSql, [random_job_id]);
-    const historyTableResult = await execute(checkHistoryTableSql, [random_job_id]);
+    const jobTableResult = await executeQuery(checkJobTableSql, [random_job_id]);
+    const historyTableResult = await executeQuery(checkHistoryTableSql, [random_job_id]);
 
-    if (JSON.parse(jobTableResult)[0]["count"] == 0 && JSON.parse(historyTableResult)[0]["count"] == 0) {
+    if (jobTableResult[0]["count"] == 0 && historyTableResult[0]["count"] == 0) {
       isUnique = true;
     }
   }
@@ -118,7 +90,7 @@ const createNewJob = async (businessId, userId = null, description, dueDate) => 
       INSERT INTO JOB_TABLE (Job_ID, Business_ID, User_ID, Description, Due_Date)
       VALUES (?, ?, ?, ?, ?);
     `;
-    const result = await execute(sql, [randomJobId, businessId, userId, description, dueDate]);
+    const result = await executeQuery(sql, [randomJobId, businessId, userId, description, dueDate]);
     console.log('New job created with ID:', randomJobId);
     return {
       result: result,
@@ -131,7 +103,7 @@ export const getCustomerJobDetails = async (jobId) => {
     FROM JOB_TABLE JOIN BUSINESS_TABLE ON JOB_TABLE.Business_ID = BUSINESS_TABLE.Business_ID 
     WHERE JOB_TABLE.Job_ID = ?`;
 
-  return JSON.parse(await execute(sql, jobId))[0];
+  return await executeQuery(sql, [jobId]);
 }
 
 const deletefromjobtable = async (jobId) => {
@@ -139,7 +111,7 @@ const deletefromjobtable = async (jobId) => {
     DELETE FROM JOB_TABLE
     WHERE Job_ID =?;
   `;
-  return execute(sql, [jobId]);
+  return executeQuery(sql, [jobId]);
   console.log('Job deleted with ID:', jobId);
 };
 
@@ -148,7 +120,7 @@ const deletefromjobhistorytable = async (jobId) => {
     DELETE FROM JOB_HISTORY
     WHERE Job_ID =?;
   `;
-  return execute(sql, [jobId]);
+  return executeQuery(sql, [jobId]);
   console.log('Job history deleted with ID:', jobId);
 };
 
@@ -161,8 +133,8 @@ const getJobDetails = async (jobId) => {
     WHERE Job_ID = ?;
   `;
 
-  const result = await execute(sql, [jobId]);
-  const parsedRes = JSON.parse(result)
+  const result = await executeQuery(sql, [jobId]);
+  const parsedRes = result
   if ( parsedRes && parsedRes[0]) {
     return parsedRes[0]; 
   } else {
@@ -179,7 +151,7 @@ const assignJobToUser = async (userId, jobId) => {
     WHERE Job_ID = ?;
   `;
 
-  return execute(sql, [userId, jobId]);
+  return executeQuery(sql, [userId, jobId]);
 };
 
 // mark a job as completed (moves it to job history and removes from current jobs)
@@ -191,16 +163,16 @@ const completeJob = async (userId, jobId, remarks = '') => {
   const deleteSubscriptionSql = 'DELETE FROM SUBSCRIPTION_TABLE WHERE Job_ID = ?;';
   // Check if the job exists in the JOB_TABLE
   console.log(`___________JOB  ID: ${jobId}`)
-  const jobDetails = JSON.parse(await execute(selectJobSql, [jobId]));
+  const jobDetails = await executeQuery(selectJobSql, [jobId]);
   if (jobDetails.length === 0) {
     throw new Error(`Job with ID ${jobId} not found in JOB_TABLE.`);
   }
   console.log(`Business id ${jobDetails[0].Business_ID}`)
   // Check if the job already exists in the JOB_HISTORY table
-  //const historyCheck = await execute(checkHistorySql, [jobId]);
+  //const historyCheck = await executeQuery(checkHistorySql, [jobId]);
  
   // Insert the job into the JOB_HISTORY table
-  await execute(insertHistorySql, [
+  await executeQuery(insertHistorySql, [
     userId,
     jobId,
     jobDetails[0].Business_ID,
@@ -208,8 +180,8 @@ const completeJob = async (userId, jobId, remarks = '') => {
     jobDetails[0].Description,
     remarks,
   ]);
-  await execute(deleteSubscriptionSql, [jobId]);
-  await execute(deleteJobSql, [jobId]);
+  await executeQuery(deleteSubscriptionSql, [jobId]);
+  await executeQuery(deleteJobSql, [jobId]);
   // Delete the job from the JOB_TABLE
   
 
@@ -224,7 +196,7 @@ const getNotifications = async (jobId) => {
     WHERE Job_ID = ?
     ORDER BY Timestamp DESC
   `;
-  return execute(sql, [userId]);
+  return executeQuery(sql, [jobId]);
 };
 
 const getSubscription = async (jobId, businessId) => {
@@ -239,7 +211,7 @@ const getSubscription = async (jobId, businessId) => {
     WHERE JOB_TABLE.Job_ID = ? AND JOB_TABLE.Business_ID = ?;
   `;
 
-  return execute(sql, [jobId, businessId]);
+  return executeQuery(sql, [jobId, businessId]);
 };
 //----------------------------------------------------------------
 //Token table helper functions
@@ -250,7 +222,7 @@ const addToken = async(userId, token) => {
   const sql = `
   INSERT INTO TOKENS (User_ID,Token,Valid) 
   VALUES (?,?,1);`
-  return execute(sql,[userId,token])
+  return executeQuery(sql,[userId,token])
 }
 //add a newly blacklisted token
 const blockToken = async(token) =>{
@@ -259,7 +231,7 @@ const blockToken = async(token) =>{
     SET Valid = 0
     WHERE Token = ?;
     `
-    return execute(sql,[token])
+    return executeQuery(sql,[token])
 }
 
 //freeze a user's tokens
@@ -270,7 +242,7 @@ const freezeUser = async(userId) =>{
   WHERE User_ID = ?;
   `
 
-  return execute(sql,[userId])
+  return executeQuery(sql,[userId])
 }
 
 //Get the status of a token, returns true if token is valid
@@ -278,8 +250,8 @@ const getTokenStatus = async (token) =>{
 
   const sql = `SELECT Valid FROM TOKENS WHERE Token = ?;`
 
-  const result = await execute(sql,[token]);
-  const JSONres = JSON.parse(result)
+  const result = await executeQuery(sql,[token]);
+  const JSONres = result
   console.log(JSONres[0].Valid)
   if(result){
     return JSONres[0].Valid;
@@ -301,23 +273,15 @@ const addSubscription = async (jobId, businessId, endpoint, authKey1, authKey2) 
     VALUES (?,?,?,?,?);
   `;
 
-  return execute(sql, [jobId, businessId, endpoint, authKey1, authKey2]);
+  return executeQuery(sql, [jobId, businessId, endpoint, authKey1, authKey2]);
 };
 
 const removeSubscription = async (jobId) => {
   const sql = 'DELETE FROM SUBSCRIPTION_TABLE WHERE Job_ID = ?'
-  return execute(sql, [jobId]);
+  return executeQuery(sql, [jobId]);
 
 }
-const closeDB = () => {
-  db.end((err) => {
-    if (err) {
-      console.error('Error closing the database:', err.message);
-    } else {
-      console.log('Database connection closed.');
-    }
-  });
-};
+
 
 const testFunctions = async () => {
   try {
@@ -378,7 +342,6 @@ export {
   completeJob,
   getSubscription,
   addSubscription,
-  closeDB,
   getJobDetails,
   addToken,
   getTokenStatus,

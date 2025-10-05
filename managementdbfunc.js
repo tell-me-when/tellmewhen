@@ -9,46 +9,11 @@
 // need to add func to return buisness name and pfp DONE
 import mysql from 'mysql';
 import dotenv from 'dotenv';
+import { executeQuery, closePool } from 'db_config.js';
+
 import { access } from 'fs';
 dotenv.config();
 
-const db = mysql.createConnection({
-  host: process.env.DB_HOST,
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  database: process.env.DB_DATABASE,
-});
-
-// Connect to the database
-db.connect((err) => {
-  if (err) {
-    console.error('Error connecting to the database:', err.message);
-  } else {
-    console.log('Connected to the MySQL database.');
-  }
-});
-
-// Helper function to execute queries
-const executeQuery = (sql, params = []) =>
-  new Promise((resolve, reject) => {
-    db.query(sql, params, (err, results) => {
-      if (err) {
-        reject(err);
-      } else {
-        resolve(results);
-      }
-    });
-  });
-
-export const closeDB = () => {
-  db.end((err) => {
-    if (err) {
-      console.error('Error closing the database:', err.message);
-    } else {
-      console.log('Database connection closed.');
-    }
-  });
-};
 
 //login need to crosscheck with business tabvle to check if user belongs to business
 export const login = async (buisness, username) => {
