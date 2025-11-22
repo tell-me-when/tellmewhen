@@ -17,61 +17,69 @@ export default function Page() {
     
     useEffect(() => {
 
-    async function initChat() {
-        try {
-        setErrorMessage("");
-        setLoading(true);
-        
-        // 1) Create a new user for the chat
-        console.log("GuestLogin")
-        console.log(jobId)
-        let res = await GuestLogin(jobId);
+        async function initChat() {
+            try {
+                setErrorMessage("");
+                setLoading(true);
+                
+                // Store jobId in localStorage for later use
+                if (jobId && typeof window !== "undefined") {
+                    localStorage.setItem("jobID", jobId);
+                }
 
-        setChannel(res.channel);
-        setToken(res.token);
-        } catch (err) {
-        console.error("Failed to create guest user:", err);
-        setErrorMessage("Could not create guest user for chat.");
-        } finally {
-        setLoading(false);
+                console.log("GuestLogin with jobId:", jobId);
+                let res = await GuestLogin(jobId);
+
+            
+                if (res && res.token && res.channel) {
+                    setChannel(res.channel);
+                    setToken(res.token);
+                } else {
+                    throw new Error("Invalid response from server");
+                }
+            } catch (err) {
+                console.error("Failed to create guest user:", err);
+                setErrorMessage("Could not load chat. Please check if the job ID is valid.");
+            } finally {
+                setLoading(false);
+            }
         }
-    }
 
-    // If the jobId is available, initialize the chat
-    if (jobId) {
-        initChat();
-    }
+        if (jobId) {
+            initChat();
+        } else {
+            setErrorMessage("No job ID provided");
+            setLoading(false);
+        }
     }, [jobId]);
 
     const data = {
-        channels: guest_channel,
+        channels: guest_channel ? [guest_channel] : null, 
         token: guest_token,
-        user: 'guest-'+localStorage["jobID"],
+        user: 'guest-' + jobId, // Use jobId 
     };
-    console.log("data")
-    console.log(data);
+
+    console.log("Chat data:", data);
+
     if (loading) {
-    return <PageLoad message="Loading Chat"/>;
+        return <PageLoad message="Loading Chat"/>;
     }
+
     if (errorMessage) {
-    return <PageLoad message={errorMessage}></PageLoad>;
+        return <PageLoad message={errorMessage} />;
     }
-    if (!data) {
-    return <PageLoad message="Unable to load chat data"></PageLoad>;
+
+    if (!data.token || !data.channels) {
+        return <PageLoad message="Unable to load chat data" />;
     }
 
     return (
-        <>
-            <div className="!overflow-y-hidden bg-[#F5F5F5] w-full flex flex-col">
-                
-                <div style = {style.container}>
-                <ClientChatComponent data={data}></ClientChatComponent>
-                </div>
-
+        <div className="!overflow-y-hidden bg-[#F5F5F5] w-full flex flex-col">
+            <div style={style.container}>
+                <ClientChatComponent data={data} />
             </div>
-            
-        </>
-    )
+        </div>
+    );
 }
 
 const style = {
