@@ -109,10 +109,10 @@ function Page() {
                 const details = await GetJobDetails(params.slug);
                 if (details.status === 200) {
                     console.log(details)
-                    setBusinessName(details.data.Business_Name || "");
-                    setJobDescription(details.data.Description || "");
-                    setDecryptedJobID(details.data.jobId || "");
-                    localStorage["jobID"] = details.data.jobId;
+                    setBusinessName(details.data[0].Business_Name || "");
+                    setJobDescription(details.data[0].Description || "");
+                    setDecryptedJobID(details.data[0].jobId || "");
+                    localStorage["jobID"] = details[0].data.jobId;
                     console.log("Job ID: " + localStorage["jobID"]);
                     setErrorDetails("");
                 } else {
