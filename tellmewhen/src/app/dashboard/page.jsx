@@ -193,7 +193,7 @@ function Page() {
 
             if (historyJobs.status === 200) {
                 let array = []
-                let jobs = JSON.parse(historyJobs.data)
+                let jobs = historyJobs.data
                 for(let i = 0; i < jobs.length; i++) {
                     array.push([jobs[i].Job_ID, jobs[i].Description, jobs[i].Remarks, (jobs[i].Completion_Date|| "").slice(0, 10)])
                 }
