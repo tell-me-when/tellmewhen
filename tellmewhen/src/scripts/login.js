@@ -52,7 +52,7 @@ export async function ClearCookies()
 
 export async function RefreshToken() 
 {
-    // Refreshes an expired access token
+    // Refresh expired access token
     let data = null;
 
     await axios.post(endpoint + "/refresh",
