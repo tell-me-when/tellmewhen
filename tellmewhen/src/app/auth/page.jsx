@@ -1,13 +1,13 @@
 'use client'
-import { ClearCookies, Login, Register } from '@/scripts/login';
+import { ClearCookies, Login } from '@/scripts/login';
 import React, { useState } from 'react';
+import RegistrationWizard from '@/components/Auth/RegistrationWizard';
 
 const AuthPage = () => {
     const [activeTab, setActiveTab] = useState('login');
     const [username, setUsername] = useState('');
     const [businessName, setBusinessName] = useState('');
     const [password, setPassword] = useState('');
-    const [confirmPassword, setConfirmPassword] = useState('');
     const [errorMessage, setErrorMessage] = useState('');
     const [processingData, setProcessingData] = useState(false);
     if (typeof window !== "undefined"){
@@ -43,57 +43,23 @@ const AuthPage = () => {
 
     }
     const handleSubmit = async (e) => {
-        setProcessingData(true);
         e.preventDefault();
+        setProcessingData(true);
         setErrorMessage('');
-        if (activeTab === 'register' && password !== confirmPassword) {
-            setErrorMessage("Passwords don't match!");
-            setProcessingData(false);
-            return;
-        }
-    
+
         try {
-            if (activeTab === 'login') {
-                handleLogin();
-            }
-            else {
-                Register(businessName, password).then((res) => {
-                    setProcessingData(false);
-                    if(res.status === 200 || res.status === 201)
-                    {
-                        setUsername("admin");
-                        handleLogin("admin");
-                    }
-                    else if(res.status === 401 || res.status === 400){
-                        setErrorMessage("A business with that name already exists")
-                    }
-                    else if(res.status === 500 || res === null || res.status === null){
-                        setErrorMessage("An error occurred while connecting to the server.")
-                    }
-                    else{
-                        setErrorMessage("An error occurred while connecting to the server.")
-                    }
-                }).catch((res)=>{
-                    if(res.status === 401 || res.status === 400){
-                        setErrorMessage("A business with that name already exists")
-                    }
-                    else{
-                        setErrorMessage("An error occurred while connecting to the server.")
-                    }
-                    setProcessingData(false);
-                });
-            }
+            handleLogin();
         } catch (err) {
             console.log(err);
             setProcessingData(false);
         }
     };
-    
+
 
     return (
         <div className="w-[100vw] h-[100vh] fixed bg-[#F5F5F5] ">
         <div style={styles.container}>
-            <div style={styles.card}>
+            <div style={activeTab === 'register' ? styles.cardWide : styles.card} className="max-h-[90vh] overflow-y-auto">
                 <div style={styles.tabsContainer}>
                     <button
                         style={{
@@ -123,14 +89,14 @@ const AuthPage = () => {
                     </button>
                 </div>
 
-                <form style={styles.form} onSubmit={handleSubmit}>
-                    {errorMessage && (
-                        <div style={styles.errorMessage}>
-                            {errorMessage}
-                        </div>
-                    )}
+                {activeTab === 'login' && (
+                    <form style={styles.form} onSubmit={handleSubmit}>
+                        {errorMessage && (
+                            <div style={styles.errorMessage}>
+                                {errorMessage}
+                            </div>
+                        )}
 
-                    {activeTab == 'login' && (
                         <input
                             type="text"
                             placeholder="Enter your business name"
@@ -139,19 +105,6 @@ const AuthPage = () => {
                             style={styles.input}
                             required
                         />
-                    )}
-
-                    {activeTab == 'register' && (
-                        <input
-                            type="text"
-                            placeholder="Enter your business name"
-                            value={businessName}
-                            onChange={(e) => setBusinessName(e.target.value)}
-                            style={styles.input}
-                            required
-                        />
-                    )}
-                    {activeTab == "login" && 
                         <input
                             type="text"
                             placeholder="Enter your username"
@@ -159,41 +112,30 @@ const AuthPage = () => {
                             value={username}
                             onChange={(e) => setUsername(e.target.value)}
                             required
-                        />}
-                    <input
-                        type="password"
-                        placeholder="Enter your password"
-                        style={styles.input}
-                        value={password}
-                        onChange={(e) => {
-                            setPassword(e.target.value);
-                            setErrorMessage('');
-                        }}
-                        required
-                    />
+                        />
+                        <input
+                            type="password"
+                            placeholder="Enter your password"
+                            style={styles.input}
+                            value={password}
+                            onChange={(e) => {
+                                setPassword(e.target.value);
+                                setErrorMessage('');
+                            }}
+                            required
+                        />
 
-                    {activeTab === 'register' && (
-                        <>
-                            <input
-                                type="password"
-                                placeholder="Confirm your password"
-                                style={styles.input}
-                                value={confirmPassword}
-                                onChange={(e) => {
-                                    setConfirmPassword(e.target.value);
-                                    setErrorMessage('');
-                                }}
-                                required
-                            />
-                            <h1 className="text-[12px] text-[#C41C1C]">* The default username will be "admin"</h1>
-                        </>
-                        
-                    )}
+                        <button type="submit" className={`${processingData?"animate-pulse":""} transition ease-in-out`} style={processingData ? styles.submitButtonDisabled:styles.submitButton} disabled={processingData}>
+                            {!processingData ? 'Log In' : "Logging In..."}
+                        </button>
+                    </form>
+                )}
 
-                    <button type="submit" className={`${processingData?"animate-pulse":""} transition ease-in-out`} style={processingData ? styles.submitButtonDisabled:styles.submitButton} disabled={processingData}>
-                        {activeTab === 'login' ? (!processingData ? 'Log In' : "Logging In...") : (!processingData ? 'Register' : "Registering...")}
-                    </button>
-                </form>
+                {activeTab === 'register' && (
+                    <div className="pt-4">
+                        <RegistrationWizard onRegistered={() => { window.location.href = '/dashboard'; }} />
+                    </div>
+                )}
             </div>
         </div>
         </div>
@@ -222,6 +164,18 @@ const styles = {
         padding: '2rem',
         width: '100%',
         maxWidth: '400px',
+    },
+
+    // The registration wizard has more fields per step (business info,
+    // stepper) than the narrow login form — a bit more width keeps it
+    // comfortable without changing the login tab's layout at all.
+    cardWide: {
+        backgroundColor: 'white',
+        borderRadius: '8px',
+        boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
+        padding: '2rem',
+        width: '100%',
+        maxWidth: '520px',
     },
 
     tabsContainer: {

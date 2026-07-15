@@ -1,7 +1,5 @@
-import axios from "axios";
-axios.defaults.withCredentials = true;
-import { GetServerEndpoint } from "./script-settings";
-let endpoint = GetServerEndpoint();
+import apiClient from "./apiClient";
+
 // DONE
 export async function GetCode(jobID) {
     /*
@@ -10,13 +8,12 @@ export async function GetCode(jobID) {
         jobID: string
     Returns:
         string: Base64 encoded image
-    
+
     */
 
     let data = null;
-    await axios.get(
-        endpoint  + "/jobs/display_code/"+jobID,
-    ).then((res) => {
+    await apiClient.get("/jobs/display_code/" + jobID)
+    .then((res) => {
         data = res
     }).catch(err => console.error(err));
     return data;

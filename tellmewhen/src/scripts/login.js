@@ -24,16 +24,23 @@ export async function Login(name, businessName, password)
     return data;
 }
 
-export async function Register(username, password)
+export async function Register({
+    businessName, subdomain, password,
+    address = "", locationLink = "", phone = "", email = "", openingHours = "",
+    tosAccepted,
+})
 // Creates a new business with the default username "admin"
 {
     let data = null;
 
     await axios.post(endpoint + "/register",
         {
-            name: username,
+            name: businessName,
             username: "admin",
-            password: password
+            password,
+            subdomain,
+            address, locationLink, phone, email, openingHours,
+            tosAccepted,
         }
     ).then(async res => {
         data = res;
@@ -50,32 +57,14 @@ export async function ClearCookies()
     return data;
 }
 
-export async function RefreshToken() 
+export async function RefreshToken()
 {
-    // Refresh expired access token
+    // Refresh expired access token. The server derives identity from the
+    // refresh token cookie itself, so no body is needed. Uses raw axios
+    // (not apiClient) deliberately — apiClient's interceptor calls this
+    // function on 401, so routing it through apiClient would recurse.
     let data = null;
 
-    await axios.post(endpoint + "/refresh",
-        {
-            username: localStorage["username"],
-            userId: localStorage["userID"],
-            businessId: localStorage["businessID"]
-        }
-    ).then(res => {data = res; console.log(data)})
+    await axios.post(endpoint + "/refresh").then(res => {data = res; console.log(data)})
     return data;
-}
-
-export async function HandleUnauthorised()
-{
-    // func will be the original function
-    let tryRefresh = await RefreshToken();
-    if(tryRefresh.status === 201)
-    {
-        window.location.reload();
-    }
-    else
-    {
-        window.location.href = "/auth";
-        return;
-    }
 }

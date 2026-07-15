@@ -28,9 +28,9 @@ export default function Page() {
             console.log("Attempt login using that ID")
             console.log("storedID:"+storedID)
             console.log("businessID:"+businessID)
-            // Attempt login using that ID
+            // Attempt login — identity comes from the auth cookie server-side
             console.log("LogIn")
-            let res = await LogIn(storedID, businessID);  
+            let res = await LogIn();
             if (res.stat === 200) {
                 setChannel(res.data.channels);
                 setToken(res.data.token);

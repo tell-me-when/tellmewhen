@@ -22,5 +22,8 @@ stages:
 - cleanup
 sast:
   stage: test
+secret_detection:
+  stage: test
 include:
 - template: Auto-DevOps.gitlab-ci.yml
+- template: Security/Secret-Detection.gitlab-ci.yml

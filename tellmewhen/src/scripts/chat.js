@@ -1,10 +1,8 @@
-import axios from "axios";
-import  {GetServerEndpoint}  from "../scripts/script-settings";
+import apiClient from "./apiClient";
 
 export async function GuestLogin(jobId) {
-    let base = GetServerEndpoint();
     let data = null;
-    await axios.get(base + "/chat/guest/login/" + jobId).then(res => {
+    await apiClient.get("/chat/guest/login/" + jobId).then(res => {
         console.log(res.status);
         if (res.status === 200) {
             console.log("Guest user created successfully");
@@ -15,12 +13,13 @@ export async function GuestLogin(jobId) {
     return data;
 }
 
-export async function LogIn(userId, businessId) {
-    let base = GetServerEndpoint();
+export async function LogIn() {
+    // userId/businessId are derived server-side from the auth cookie now,
+    // not taken from the URL.
     let data;
     let stat;
 
-    await axios.get(base + "/chat/worker/login/" + userId + "/" + businessId)
+    await apiClient.get("/chat/worker/login")
         .then(res => {
             console.log(res.status);
             if (res.status === 200) {
@@ -34,9 +33,7 @@ export async function LogIn(userId, businessId) {
 }
 
 export async function DeleteChannel(jobId) {
-    let base = GetServerEndpoint();
-
-    await axios.post(base + "/chat/channels/delete_channel", {
+    await apiClient.post("/chat/channels/delete_channel", {
         jobId: jobId,
     }).then(res => {
         console.log(res.status);

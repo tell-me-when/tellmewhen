@@ -157,13 +157,23 @@ function Page() {
         if (typeof window !== undefined && !DEBUGMODE && !(localStorage["loggedIn"] != true && localStorage["userID"] != null || localStorage["businessID"] != null)) window.location.href = "/auth";
 
         const CallAPI = async () => {
-            // Runs a quick call which can refresh tokens
-            await GetAccountDetails()
-            
-            SetPrivilegeLevel(await GetPrivilegeLevel(localStorage["userID"]))
-            const employeesData = await GetEmployees()
-            console.log(employeesData);
-            if(employeesData.status === 200) SetEmployees(employeesData.data);
+            try {
+                // Runs a quick call which can refresh tokens
+                await GetAccountDetails()
+
+                SetPrivilegeLevel(await GetPrivilegeLevel(localStorage["userID"]))
+                const employeesData = await GetEmployees()
+                console.log(employeesData);
+                if(employeesData.status === 200) SetEmployees(employeesData.data);
+            } catch (e) {
+                console.log(e)
+                // Deliberately don't setHidePage(false) here — hidePage
+                // staying true is what makes the PageLoad error screen
+                // (with this message) render, instead of revealing the
+                // real dashboard with incomplete/empty data.
+                setAPIError("Cannot connect to the server.")
+                return;
+            }
             // Makes all the API requests in parallel
             const responses = await Promise.allSettled([
                 GetCurrentJobs(),
@@ -337,7 +347,7 @@ function Page() {
         setIsHistoryModalOpen(false);
     };
 
-    if (hidePage) return <PageLoad></PageLoad>
+    if (hidePage) return <PageLoad message={APIError || undefined}></PageLoad>
     return (
         <div className="w-[100vw] h-[100vh] overflow-y-scroll fixed bg-[#F5F5F5] ">
 

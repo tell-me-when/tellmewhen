@@ -1,7 +1,4 @@
-import axios from "axios";
-axios.defaults.withCredentials = true;
-import { GetServerEndpoint } from "./script-settings";
-let endpoint = GetServerEndpoint();
+import apiClient from "./apiClient";
 
 // Helper function for key parameter
 // function urlB64ToUint8Aqrray(base64String) {
@@ -36,7 +33,7 @@ export async function SaveSubscription(subscription, jobId, businessId)
     }
 
     console.log(json);
-    await axios.post(endpoint  + "/save-new-subscription",
+    await apiClient.post("/save-new-subscription",
         json
     ).then(res => data = res)
     return data
@@ -46,7 +43,7 @@ export async function NotifyCustomer(jobId, title, body)
 {
 
     let data = null
-    await axios.post(endpoint  + "/jobs/notify/" + jobId,
+    await apiClient.post("/jobs/notify/" + jobId,
         {
             title: title,
             message: body,

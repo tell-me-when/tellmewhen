@@ -1,22 +1,13 @@
-import axios from "axios";
-axios.defaults.withCredentials = true;
-import { GetServerEndpoint } from "./script-settings";
-let endpoint = GetServerEndpoint();
-
-//================== NEW ==================
+import apiClient from "./apiClient";
 
 export async function GetCurrentJobs()
 {
     let data = null;
-    await axios.get(`${endpoint }/jobs/current/${localStorage["userID"]}`,
-        {
-            businessID: localStorage["businessID"],
-        }
-    ).then(async (res) => {
+    await apiClient.get(`/jobs/current/${localStorage["userID"]}`)
+    .then((res) => {
         data = res;
-    }).catch(async (err) => {
-        if(err.status === 401) await HandleUnauthorised();
-        else data = err
+    }).catch((err) => {
+        data = err;
     });
     return data;
 }
@@ -25,16 +16,11 @@ export async function GetJobHistory()
 {
     let data = null;
 
-    await axios.get(`${endpoint }/jobs/history`,
-        {
-            businessID: localStorage["businessID"],
-            userID: localStorage["userID"],
-        }
-    ).then(async (res) => {
+    await apiClient.get(`/jobs/history`)
+    .then((res) => {
         data = res;
-    }).catch(async (err) => {
-        if(err.status === 401) await HandleUnauthorised();
-        else data = err
+    }).catch((err) => {
+        data = err;
     });
     return data;
 }
@@ -43,19 +29,17 @@ export async function CreateJob(description, deadline, userID)
 {
     let data = null;
 
-    console.log(userID)
-    await axios.post(endpoint + "/jobs/new",
+    await apiClient.post("/jobs/new",
         {
             description: description,
             dueDate: deadline,
             assignedId: userID,
         }
-    ).then(async (res) => {
+    ).then((res) => {
         data = res;
-    }).catch(async (err) => {
+    }).catch((err) => {
         console.log(err)
-        if(err.status === 401) await HandleUnauthorised();
-        else data = err
+        data = err;
     });
     return data;
 }
@@ -69,16 +53,14 @@ export async function CompleteJob(jobID, remarks)
 {
     let data = null;
 
-    await axios.post(endpoint + "/jobs/complete/" + jobID, 
+    await apiClient.post("/jobs/complete/" + jobID,
         {
-            userId: localStorage["userID"],
             remarks: remarks,
         }
-    ).then(async (res) => {
+    ).then((res) => {
         data = res;
-    }).catch(async (err) => {
-        if(err.status === 401) await HandleUnauthorised();
-        else data = err
+    }).catch((err) => {
+        data = err;
     });
     return data;
 }
@@ -87,16 +69,15 @@ export async function AssignJob(jobID, userID)
 {
     let data = null;
 
-    await axios.post(endpoint + "/jobs/assign_job", 
+    await apiClient.post("/jobs/assign_job",
         {
             jid: jobID,
             uid: userID
         }
-    ).then(async (res) => {
+    ).then((res) => {
         data = res;
-    }).catch(async (err) => {
-        if(err.status === 401) await HandleUnauthorised();
-        else data = err
+    }).catch((err) => {
+        data = err;
     });
     return data;
 }
